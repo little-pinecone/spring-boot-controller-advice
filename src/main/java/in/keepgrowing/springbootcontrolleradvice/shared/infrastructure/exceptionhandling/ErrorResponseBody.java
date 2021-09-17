@@ -24,4 +24,11 @@ public class ErrorResponseBody {
 
         return responseBody;
     }
+
+    public static ErrorResponseBody of(ExceptionCode exceptionCode, String message) {
+        var responseBody = new ErrorResponseBody(exceptionCode);
+        responseBody.message = message;
+
+        return responseBody;
+    }
 }

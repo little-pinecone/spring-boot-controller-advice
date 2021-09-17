@@ -2,5 +2,5 @@ package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptio
 
 public enum ExceptionCode {
 
-    INTERNAL_SERVER_ERROR
+    INTERNAL_SERVER_ERROR, CLIENT_ERROR
 }

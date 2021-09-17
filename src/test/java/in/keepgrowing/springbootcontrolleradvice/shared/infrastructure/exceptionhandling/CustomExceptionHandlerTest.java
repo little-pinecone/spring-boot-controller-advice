@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,6 +50,19 @@ class CustomExceptionHandlerTest {
                 "\"exceptionCode\":\"" + exceptionCode + "\"," +
                 "\"message\":\"" + message + "\"" +
                 "}";
+    }
+
+    @Test
+    void shouldHandleMethodArgumentTypeMismatchException() throws Exception {
+        var expected = getExpectedContent(ExceptionCode.CLIENT_ERROR,
+                CustomExceptionHandler.INVALID_REQUEST_MESSAGE);
+
+        when(testController.executeTestRequest())
+                .thenThrow(MethodArgumentTypeMismatchException.class);
+
+        mvc.perform(get(PATH))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(expected));
     }
 
     @RestController
