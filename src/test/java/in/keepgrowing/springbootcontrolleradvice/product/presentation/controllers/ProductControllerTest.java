@@ -1,9 +1,9 @@
 package in.keepgrowing.springbootcontrolleradvice.product.presentation.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 import in.keepgrowing.springbootcontrolleradvice.product.infrastructure.config.MvcConfig;
-import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
@@ -25,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value = ProductController.class)
 class ProductControllerTest {
 
-    public static final String BASE_PATH = "/" + MvcConfig.API_PREFIX + "/products";
+    private static final String BASE_PATH = "/" + MvcConfig.API_PREFIX + "/products";
+    private static final String TEST_UUID = "a25fd1a8-b2e2-3b40-97a5-cead9ec87986";
 
     private TestProductProvider productProvider;
 
@@ -65,5 +68,30 @@ class ProductControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().json(expectedResponse));
+    }
+
+    @Test
+    void shouldReturnProductById() throws Exception {
+        var product = productProvider.full();
+
+        when(productRepository.findById(UUID.fromString(TEST_UUID)))
+                .thenReturn(Optional.of(product));
+
+        var expectedResponse = objectMapper.writeValueAsString(product);
+
+        mvc.perform(get(BASE_PATH + "/" + TEST_UUID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponse));
+    }
+
+    @Test
+    void shouldReturnNotFoundForNonExistingId() throws Exception {
+        when(productRepository.findById(UUID.fromString(TEST_UUID)))
+                .thenReturn(Optional.empty());
+
+        mvc.perform(get(BASE_PATH + "/" + TEST_UUID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
     }
 }
