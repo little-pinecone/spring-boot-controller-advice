@@ -1,4 +1,4 @@
-package in.keepgrowing.springbootcontrolleradvice.infrastructure.repositories;
+package in.keepgrowing.springbootcontrolleradvice.product.infrastructure.repositories;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

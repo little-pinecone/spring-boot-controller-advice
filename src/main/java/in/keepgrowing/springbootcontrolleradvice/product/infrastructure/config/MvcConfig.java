@@ -1,4 +1,4 @@
-package in.keepgrowing.springbootcontrolleradvice.infrastructure.config;
+package in.keepgrowing.springbootcontrolleradvice.product.infrastructure.config;
 
 import in.keepgrowing.springbootcontrolleradvice.SpringBootControllerAdviceApplication;
 import org.springframework.context.annotation.Configuration;

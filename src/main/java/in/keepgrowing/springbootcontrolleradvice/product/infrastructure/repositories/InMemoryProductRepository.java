@@ -1,17 +1,25 @@
-package in.keepgrowing.springbootcontrolleradvice.model;
+package in.keepgrowing.springbootcontrolleradvice.product.infrastructure.repositories;
 
 import dev.codesoapbox.dummy4j.Dummy4j;
-import in.keepgrowing.springbootcontrolleradvice.domain.model.Product;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Product;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 
-public class TestProductProvider {
+import java.util.List;
+
+public class InMemoryProductRepository implements ProductRepository {
 
     private final Dummy4j dummy;
 
-    public TestProductProvider() {
+    public InMemoryProductRepository() {
         this.dummy = new Dummy4j();
     }
 
-    public Product full() {
+    @Override
+    public List<Product> findAll() {
+        return dummy.listOf(20, this::generateProduct);
+    }
+
+    private Product generateProduct() {
         return Product.builder()
                 .id(dummy.identifier().uuid())
                 .name(dummy.lorem().word() + " " + dummy.lorem().word())

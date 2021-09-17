@@ -1,7 +1,7 @@
-package in.keepgrowing.springbootcontrolleradvice.presentation.controllers;
+package in.keepgrowing.springbootcontrolleradvice.product.presentation.controllers;
 
-import in.keepgrowing.springbootcontrolleradvice.domain.model.Product;
-import in.keepgrowing.springbootcontrolleradvice.domain.repositories.ProductRepository;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Product;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

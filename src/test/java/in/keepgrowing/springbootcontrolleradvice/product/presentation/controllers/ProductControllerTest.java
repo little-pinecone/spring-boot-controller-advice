@@ -1,9 +1,9 @@
-package in.keepgrowing.springbootcontrolleradvice.presentation.controllers;
+package in.keepgrowing.springbootcontrolleradvice.product.presentation.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import in.keepgrowing.springbootcontrolleradvice.domain.repositories.ProductRepository;
-import in.keepgrowing.springbootcontrolleradvice.infrastructure.config.MvcConfig;
-import in.keepgrowing.springbootcontrolleradvice.model.TestProductProvider;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
+import in.keepgrowing.springbootcontrolleradvice.product.infrastructure.config.MvcConfig;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

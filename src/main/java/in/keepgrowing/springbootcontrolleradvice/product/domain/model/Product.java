@@ -1,4 +1,4 @@
-package in.keepgrowing.springbootcontrolleradvice.domain.model;
+package in.keepgrowing.springbootcontrolleradvice.product.domain.model;
 
 import lombok.Builder;
 import lombok.Data;
