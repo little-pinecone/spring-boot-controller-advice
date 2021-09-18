@@ -14,7 +14,7 @@ public class InMemoryProductRepository implements ProductRepository {
     private final List<Product> products;
 
     public InMemoryProductRepository() {
-        this.dummy = new Dummy4j();
+        this.dummy = new Dummy4j(123L, null, null);
         this.products = dummy.listOf(20, this::generateProduct);
     }
 
