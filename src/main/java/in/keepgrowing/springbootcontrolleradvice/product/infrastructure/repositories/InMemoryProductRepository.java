@@ -41,4 +41,12 @@ public class InMemoryProductRepository implements ProductRepository {
                 .filter(p -> p.getId().equals(productId))
                 .findFirst();
     }
+
+    @Override
+    public Optional<Product> save(Product productDetails) {
+        productDetails.setId(dummy.identifier().uuid());
+        products.add(productDetails);
+
+        return findById(productDetails.getId());
+    }
 }

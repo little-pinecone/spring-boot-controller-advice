@@ -11,8 +11,14 @@ public class TestProductProvider {
     }
 
     public Product full() {
+        var product = withoutId();
+        product.setId(dummy.identifier().uuid());
+
+        return product;
+    }
+
+    public Product withoutId() {
         return Product.builder()
-                .id(dummy.identifier().uuid())
                 .name(dummy.lorem().word() + " " + dummy.lorem().word())
                 .color(dummy.color().name())
                 .ean(dummy.identifier().ean13())

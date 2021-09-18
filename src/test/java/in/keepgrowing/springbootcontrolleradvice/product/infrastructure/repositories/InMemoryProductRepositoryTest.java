@@ -1,5 +1,6 @@
 package in.keepgrowing.springbootcontrolleradvice.product.infrastructure.repositories;
 
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,5 +37,19 @@ class InMemoryProductRepositoryTest {
         assertNotNull(actual);
         assertTrue(actual.isPresent());
         assertNotNull(actual.get().getId());
+    }
+
+    @Test
+    void shouldSaveProduct() {
+        var originalSize = productRepository.findAll().size();
+        var productProvider = new TestProductProvider();
+        var productDetails = productProvider.withoutId();
+
+        var actual = productRepository.save(productDetails);
+
+        assertNotNull(actual);
+        assertTrue(actual.isPresent());
+        assertNotNull(actual.get().getId());
+        assertEquals(originalSize + 1, productRepository.findAll().size());
     }
 }
