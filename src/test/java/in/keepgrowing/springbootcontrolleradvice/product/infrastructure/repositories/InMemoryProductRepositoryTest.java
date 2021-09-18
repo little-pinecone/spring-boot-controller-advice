@@ -26,4 +26,15 @@ class InMemoryProductRepositoryTest {
                 () -> assertFalse(actual.get(0).getName().isBlank(), "Blank element field")
         );
     }
+
+    @Test
+    void shouldReturnProductById() {
+        var products = productRepository.findAll();
+
+        var actual = productRepository.findById(products.get(0).getId());
+
+        assertNotNull(actual);
+        assertTrue(actual.isPresent());
+        assertNotNull(actual.get().getId());
+    }
 }
