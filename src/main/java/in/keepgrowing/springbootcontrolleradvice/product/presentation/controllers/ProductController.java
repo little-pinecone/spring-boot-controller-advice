@@ -5,11 +5,9 @@ import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.Pro
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,5 +33,12 @@ public class ProductController {
         return productRepository.findById(productId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
+    @PostMapping()
+    public ResponseEntity<Product> save(@Valid @RequestBody Product productDetails) {
+        return productRepository.save(productDetails)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
     }
 }

@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -93,5 +94,46 @@ class ProductControllerTest {
         mvc.perform(get(BASE_PATH + "/" + TEST_UUID)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldSaveNewProduct() throws Exception {
+        var productDetails = productProvider.withoutId();
+        var expected = productProvider.full();
+
+        when(productRepository.save(productDetails))
+                .thenReturn(Optional.of(expected));
+
+        var expectedResponse = objectMapper.writeValueAsString(expected);
+
+        mvc.perform(post(BASE_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(productDetails)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponse));
+    }
+
+    @Test
+    void shouldReturnBadRequestForInvalidProductDetails() throws Exception {
+        var productDetails = productProvider.withoutId();
+        productDetails.setEan("");
+
+        mvc.perform(post(BASE_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(productDetails)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnInternalServerErrorOnRepositoryFailure() throws Exception {
+        var productDetails = productProvider.withoutId();
+
+        when(productRepository.save(productDetails))
+                .thenReturn(Optional.empty());
+
+        mvc.perform(post(BASE_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(productDetails)))
+                .andExpect(status().isInternalServerError());
     }
 }
