@@ -14,20 +14,25 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @Slf4j
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
-    public static final String INVALID_REQUEST_MESSAGE = "Invalid request";
+    public static final String INVALID_REQUEST_MESSAGE = "Invalid request.";
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Object> handleException(RuntimeException ex, WebRequest request) {
         log.error("An unhandled exception occurred:", ex);
-        var body = ErrorResponseBody.of(ExceptionCode.INTERNAL_SERVER_ERROR);
+        var body = ErrorResponseBody.builder()
+                .exceptionCode(ExceptionCode.INTERNAL_SERVER_ERROR)
+                .build();
 
         return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleException(MethodArgumentTypeMismatchException ex, WebRequest request) {
-        log.error("Invalid controller method argument:", ex);
-        var body = ErrorResponseBody.of(ExceptionCode.CLIENT_ERROR, INVALID_REQUEST_MESSAGE);
+        log.error("Invalid argument type:", ex);
+        var body = ErrorResponseBody.builder()
+                .exceptionCode(ExceptionCode.CLIENT_ERROR)
+                .message(INVALID_REQUEST_MESSAGE + " Verify the type of provided arguments.")
+                .build();
 
         return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
     }
