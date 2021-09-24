@@ -18,6 +18,11 @@ public class TestProductProvider {
     }
 
     public Product withoutId() {
+        var manufacturer = Manufacturer.builder()
+                .name(dummy.lorem().word() + " " + dummy.lorem().word())
+                .contactEmail(dummy.internet().email())
+                .build();
+
         return Product.builder()
                 .name(dummy.lorem().word() + " " + dummy.lorem().word())
                 .color(dummy.color().name())
@@ -25,6 +30,7 @@ public class TestProductProvider {
                 .countryOfOrigin(dummy.nation().country())
                 .price(dummy.finance().priceBuilder().withCurrency("USD").build())
                 .availableQuantity(dummy.number().nextInt(1, 200))
+                .manufacturer(manufacturer)
                 .build();
     }
 }

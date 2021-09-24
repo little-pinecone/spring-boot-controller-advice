@@ -3,6 +3,7 @@ package in.keepgrowing.springbootcontrolleradvice.product.domain.model;
 import lombok.Builder;
 import lombok.Data;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.UUID;
 
@@ -19,4 +20,7 @@ public class Product {
     private String countryOfOrigin;
     private String price;
     private int availableQuantity;
+
+    @Valid
+    private Manufacturer manufacturer;
 }

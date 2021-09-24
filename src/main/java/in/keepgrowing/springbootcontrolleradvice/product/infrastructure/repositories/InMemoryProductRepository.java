@@ -1,6 +1,7 @@
 package in.keepgrowing.springbootcontrolleradvice.product.infrastructure.repositories;
 
 import dev.codesoapbox.dummy4j.Dummy4j;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Manufacturer;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Product;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 
@@ -19,6 +20,11 @@ public class InMemoryProductRepository implements ProductRepository {
     }
 
     private Product generateProduct() {
+        var manufacturer = Manufacturer.builder()
+                .name(dummy.lorem().word() + " " + dummy.lorem().word())
+                .contactEmail(dummy.internet().email())
+                .build();
+
         return Product.builder()
                 .id(dummy.identifier().uuid())
                 .name(dummy.lorem().word() + " " + dummy.lorem().word())
@@ -27,6 +33,7 @@ public class InMemoryProductRepository implements ProductRepository {
                 .countryOfOrigin(dummy.nation().country())
                 .price(dummy.finance().priceBuilder().withCurrency("USD").build())
                 .availableQuantity(dummy.number().nextInt(1, 200))
+                .manufacturer(manufacturer)
                 .build();
     }
 
