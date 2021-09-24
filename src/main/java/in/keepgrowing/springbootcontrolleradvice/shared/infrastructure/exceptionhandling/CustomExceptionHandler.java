@@ -1,9 +1,12 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
+import com.fasterxml.jackson.core.JsonLocation;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,7 +26,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Object> handleException(RuntimeException ex, WebRequest request) {
-        log.error("An unhandled exception occurred:", ex);
+        log.error("Unhandled exception has occurred:", ex);
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.INTERNAL_SERVER_ERROR)
                 .build();
@@ -65,5 +68,41 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         });
 
         return validationErrors;
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+                                                                  HttpHeaders headers,
+                                                                  HttpStatus status,
+                                                                  WebRequest request) {
+        log.error("Message not readable:", ex);
+        var errorDetails = getErrorDetails(ex.getCause());
+        var body = ErrorResponseBody.builder()
+                .exceptionCode(ExceptionCode.CLIENT_ERROR)
+                .message(INVALID_REQUEST_MESSAGE + " " + errorDetails)
+                .build();
+
+        return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    private String getErrorDetails(Throwable cause) {
+        var errorDetails = "The HTTP message could not be read.";
+
+        if (cause instanceof JsonProcessingException) {
+            errorDetails = createJsonProcessingErrorMessage((JsonProcessingException) cause);
+        }
+
+        return errorDetails;
+    }
+
+    private String createJsonProcessingErrorMessage(JsonProcessingException procEx) {
+        var message = procEx.getOriginalMessage();
+        var location = getSimplifiedLocation(procEx.getLocation());
+
+        return message + " at " + location;
+    }
+
+    private String getSimplifiedLocation(JsonLocation location) {
+        return String.format("line: %d, column: %d", location.getLineNr(), location.getColumnNr());
     }
 }
