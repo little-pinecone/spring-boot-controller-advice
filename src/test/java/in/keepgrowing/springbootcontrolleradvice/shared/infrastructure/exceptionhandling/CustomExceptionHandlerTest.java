@@ -7,12 +7,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -55,6 +56,20 @@ class CustomExceptionHandlerTest {
 
         mvc.perform(get(PATH))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.exceptionCode", is(expected)));
+    }
+
+    @Test
+    void shouldHandleMethodArgumentNotValid() throws Exception {
+        var expected = ExceptionCode.CLIENT_ERROR.toString();
+        var exception = mock((MethodArgumentNotValidException.class));
+
+        doAnswer(invocation -> {
+            throw exception;
+        }).when(testController).executeTestRequest();
+
+        mvc.perform(get(PATH))
+                .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.exceptionCode", is(expected)));
     }
 
