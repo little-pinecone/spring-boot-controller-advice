@@ -1,22 +1,17 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
-import com.fasterxml.jackson.core.JsonLocation;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.mock.http.MockHttpInputMessage;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import java.io.InputStream;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.*;
@@ -34,10 +29,13 @@ class CustomExceptionHandlerTest {
     @Mock
     private TestController testController;
 
+    @Mock
+    private HttpMessageNotReadableDetails messageNotReadableDetails;
+
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(testController)
-                .setControllerAdvice(new CustomExceptionHandler())
+                .setControllerAdvice(new CustomExceptionHandler(messageNotReadableDetails))
                 .build();
     }
 
@@ -80,31 +78,20 @@ class CustomExceptionHandlerTest {
     }
 
     @Test
-    void shouldHandleJsonProcessingException() throws Exception {
+    void shouldHandleHttpMessageNotReadableException() throws Exception {
         var expectedCode = ExceptionCode.CLIENT_ERROR.toString();
-        var expectedMessage = "Invalid request. Some error at line: 20, column: 30";
+        var expectedMessage = "Invalid request. Error details";
 
         when(testController.executeTestRequest())
-                .thenThrow(createHttpMessageNotReadableException());
+                .thenThrow(HttpMessageNotReadableException.class);
+
+        when(messageNotReadableDetails.getDetails(any()))
+                .thenReturn("Error details");
 
         mvc.perform(get("/test"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionCode", is(expectedCode)))
                 .andExpect(jsonPath("$.message", is(expectedMessage)));
-    }
-
-    private HttpMessageNotReadableException createHttpMessageNotReadableException() {
-        var innerException = createJsonProcessingException();
-        var inputMessage = new MockHttpInputMessage(InputStream.nullInputStream());
-
-        return new HttpMessageNotReadableException("Unexpected Exception", innerException, inputMessage);
-    }
-
-    private JsonProcessingException createJsonProcessingException() {
-        var jsonLocation = new JsonLocation("sourceRef", 10, 20, 30);
-
-        return new JsonProcessingException("Some error", jsonLocation) {
-        };
     }
 
     @RestController

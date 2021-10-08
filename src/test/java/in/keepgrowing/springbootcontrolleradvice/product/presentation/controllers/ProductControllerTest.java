@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 import in.keepgrowing.springbootcontrolleradvice.product.infrastructure.config.MvcConfig;
+import in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling.HttpMessageNotReadableDetails;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +45,9 @@ class ProductControllerTest {
 
     @MockBean
     private ProductRepository productRepository;
+
+    @MockBean
+    private HttpMessageNotReadableDetails messageNotReadableDetails;
 
     @BeforeEach
     void setUp() {

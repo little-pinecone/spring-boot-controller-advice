@@ -1,7 +1,5 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
-import com.fasterxml.jackson.core.JsonLocation;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,6 +21,12 @@ import java.util.List;
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     public static final String INVALID_REQUEST_MESSAGE = "Invalid request.";
+
+    private final HttpMessageNotReadableDetails messageNotReadableDetails;
+
+    public CustomExceptionHandler(HttpMessageNotReadableDetails messageNotReadableDetails) {
+        this.messageNotReadableDetails = messageNotReadableDetails;
+    }
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Object> handleException(RuntimeException ex, WebRequest request) {
@@ -76,33 +80,12 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpStatus status,
                                                                   WebRequest request) {
         log.error("Message not readable:", ex);
-        var errorDetails = getErrorDetails(ex.getCause());
+        var errorDetails = messageNotReadableDetails.getDetails(ex.getCause());
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.CLIENT_ERROR)
                 .message(INVALID_REQUEST_MESSAGE + " " + errorDetails)
                 .build();
 
         return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
-    }
-
-    private String getErrorDetails(Throwable cause) {
-        var errorDetails = "The HTTP message could not be read.";
-
-        if (cause instanceof JsonProcessingException) {
-            errorDetails = createJsonProcessingErrorMessage((JsonProcessingException) cause);
-        }
-
-        return errorDetails;
-    }
-
-    private String createJsonProcessingErrorMessage(JsonProcessingException procEx) {
-        var message = procEx.getOriginalMessage();
-        var location = getSimplifiedLocation(procEx.getLocation());
-
-        return message + " at " + location;
-    }
-
-    private String getSimplifiedLocation(JsonLocation location) {
-        return String.format("line: %d, column: %d", location.getLineNr(), location.getColumnNr());
     }
 }
