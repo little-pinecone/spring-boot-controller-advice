@@ -4,10 +4,12 @@ import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
@@ -20,8 +22,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class HttpMessageNotReadableDetailsTest {
@@ -32,16 +33,28 @@ class HttpMessageNotReadableDetailsTest {
     private static final Pattern UNKNOWN_TYPE = Pattern.compile(HttpMessageNotReadableDetails.UNKNOWN_TYPE);
 
     private HttpMessageNotReadableDetails messageNotReadableDetails;
+    private JsonParser parser;
 
     @BeforeEach
     void setUp() {
         messageNotReadableDetails = new HttpMessageNotReadableDetails();
+        parser = Mockito.mock(JsonParser.class);
+        lenient().when(parser.getTokenLocation())
+                .thenReturn(new JsonLocation("sourceRef", 10, 20, 30));
     }
 
     @Test
-    void shouldProvideDetailsForMismatchedInputExceptionWithPaths() {
-        var exception = getMismatchInputExceptionWithPaths();
-        var expectedMessage = "Invalid value for field1[3].field2 (expected a floating point number) " +
+    void shouldProvideDefaultDetails() {
+        var actual = messageNotReadableDetails.getDetails(new RuntimeException());
+
+        assertEquals(HttpMessageNotReadableDetails.DEFAULT_MESSAGE, actual);
+    }
+
+    @Test
+    void shouldProvideDetailsForInvalidFormatException() {
+        var exception = InvalidFormatException.from(parser, "msg", "val", Double.class);
+        prependPaths(exception);
+        var expectedMessage = "Invalid value 'val' for 'field1[3].field2' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
 
         var actual = messageNotReadableDetails.getDetails(exception);
@@ -49,34 +62,38 @@ class HttpMessageNotReadableDetailsTest {
         assertEquals(expectedMessage, actual);
     }
 
-    private MismatchedInputException getMismatchInputExceptionWithPaths() {
-        var exception = getMismatchedInputException(Double.class);
-
+    private void prependPaths(JsonMappingException exception) {
         exception.prependPath(new JsonMappingException.Reference(null, "field2"));
         exception.prependPath(new JsonMappingException.Reference(null, 3));
         exception.prependPath(new JsonMappingException.Reference(null, "field1"));
-
-        return exception;
     }
 
-    private MismatchedInputException getMismatchedInputException(Class<?> requiredType) {
-        var parser = getJsonParser();
+    @Test
+    void shouldProvideDetailsForInvalidFormatExceptionWithoutValueAndPaths() {
+        var exception = InvalidFormatException.from(parser, "msg", null, Double.class);
+        var expectedMessage = "Invalid value for 'the request' (expected a floating point number) " +
+                "at line: 20, column: 30 in json.";
 
-        return MismatchedInputException.from(parser, requiredType, "irrelevant");
+        var actual = messageNotReadableDetails.getDetails(exception);
+
+        assertEquals(expectedMessage, actual);
     }
 
-    private JsonParser getJsonParser() {
-        var parser = mock(JsonParser.class);
+    @Test
+    void shouldProvideDetailsForMismatchedInputExceptionWithPaths() {
+        var exception = MismatchedInputException.from(parser, Double.class, "msg");
+        prependPaths(exception);
+        var expectedMessage = "Invalid value for 'field1[3].field2' (expected a floating point number) " +
+                "at line: 20, column: 30 in json.";
 
-        when(parser.getTokenLocation())
-                .thenReturn(new JsonLocation("sourceRef", 10, 20, 30));
+        var actual = messageNotReadableDetails.getDetails(exception);
 
-        return parser;
+        assertEquals(expectedMessage, actual);
     }
 
     @Test
     void shouldProvideDetailsForMismatchedInputExceptionWhenRequiredTypeIsUnknown() {
-        var exception = getMismatchedInputException(Map.class);
+        var exception = MismatchedInputException.from(parser, Map.class, "msg");
 
         var actual = messageNotReadableDetails.getDetails(exception);
         var bicMatcher = UNKNOWN_TYPE.matcher(actual);
@@ -87,7 +104,7 @@ class HttpMessageNotReadableDetailsTest {
     @Test
     void shouldProvideDetailsForMismatchedInputExceptionForSupportedTypes() {
         TYPES.forEach(type -> {
-            var exception = getMismatchedInputException(type);
+            var exception = MismatchedInputException.from(parser, type, "msg");
 
             var actual = messageNotReadableDetails.getDetails(exception);
             var bicMatcher = UNKNOWN_TYPE.matcher(actual);
@@ -98,8 +115,18 @@ class HttpMessageNotReadableDetailsTest {
 
     @Test
     void shouldProvideDetailsForMismatchedInputExceptionForEnums() {
-        var exception = getMismatchedInputException(TestEnum.class);
-        var expectedMessage = "Invalid value for the request (expected an enum [A, B]) at line: 20, column: 30 in json.";
+        var exception = MismatchedInputException.from(parser, TestEnum.class, "msg");
+        var expectedMessage = "Invalid value for 'the request' (expected an enum '[A, B]') at line: 20, column: 30 in json.";
+
+        var actual = messageNotReadableDetails.getDetails(exception);
+
+        assertEquals(expectedMessage, actual);
+    }
+
+    @Test
+    void shouldProvideDetailsForMismatchedInputExceptionWithEmptyPath() {
+        var exception = MismatchedInputException.from(parser, int.class, "msg");
+        var expectedMessage = "Invalid value for 'the request' (expected an integer number) at line: 20, column: 30 in json.";
 
         var actual = messageNotReadableDetails.getDetails(exception);
 
@@ -120,7 +147,7 @@ class HttpMessageNotReadableDetailsTest {
         };
     }
 
-    private static enum TestEnum {
+    private enum TestEnum {
         A, B
     }
 }

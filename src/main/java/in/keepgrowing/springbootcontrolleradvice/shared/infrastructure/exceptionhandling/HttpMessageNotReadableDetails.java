@@ -3,6 +3,7 @@ package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptio
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ import java.util.*;
 public class HttpMessageNotReadableDetails {
 
     protected static final String UNKNOWN_TYPE = "type could not be established";
+    protected static final String DEFAULT_MESSAGE = "The HTTP message could not be read.";
 
     private static final List<Class<?>> FLOATING_POINT = List.of(Double.class, double.class, Float.class, float.class);
     private static final List<Class<?>> INTEGER = List.of(Integer.class, int.class, Long.class, long.class,
@@ -32,9 +34,9 @@ public class HttpMessageNotReadableDetails {
             List.of(Boolean.class, boolean.class), "a boolean",
             List.of(List.class), "a list"
     );
-    private static final String DEFAULT_MESSAGE = "The HTTP message could not be read.";
-    private static final String INVALID_VALUE_MESSAGE_FORMAT = "Invalid value for %s (expected %s) at %s.";
-    private static final String MISMATCH_ENUM_MESSAGE_FORMAT = "an enum %s";
+    private static final String INVALID_VALUE_MESSAGE_FORMAT = "Invalid value '%s' for '%s' (expected %s) at %s.";
+    private static final String INVALID_FIELD_MESSAGE_FORMAT = "Invalid value for '%s' (expected %s) at %s.";
+    private static final String MISMATCH_ENUM_MESSAGE_FORMAT = "an enum '%s'";
     private static final String ROOT_PATH = "the request";
     private static final String SIMPLIFIED_LOCATION_FORMAT = "line: %d, column: %d in json";
     private static final String REFERENCE_INDEX_FORMAT = "[%s]";
@@ -44,8 +46,10 @@ public class HttpMessageNotReadableDetails {
     public String getDetails(Throwable cause) {
         var errorDetails = DEFAULT_MESSAGE;
 
-        if (cause instanceof MismatchedInputException) {
-            errorDetails = createMismatchedInputMessage((MismatchedInputException) cause);
+        if (cause instanceof InvalidFormatException) {
+            errorDetails = createInvalidFormatErrorMessage((InvalidFormatException) cause);
+        } else if (cause instanceof MismatchedInputException) {
+            errorDetails = createMismatchedInputErrorMessage((MismatchedInputException) cause);
         } else if (cause instanceof JsonProcessingException) {
             errorDetails = createJsonProcessingErrorMessage((JsonProcessingException) cause);
         }
@@ -53,12 +57,17 @@ public class HttpMessageNotReadableDetails {
         return errorDetails;
     }
 
-    private String createMismatchedInputMessage(MismatchedInputException exception) {
+    private String createInvalidFormatErrorMessage(InvalidFormatException exception) {
+        var value = exception.getValue();
         var errorPath = getErrorPath(exception);
         var expectedType = getSimplifiedRequiredType(exception.getTargetType());
         var locationInJson = getSimplifiedLocation(exception.getLocation());
 
-        return String.format(INVALID_VALUE_MESSAGE_FORMAT, errorPath, expectedType, locationInJson);
+        if (value == null) {
+            return String.format(INVALID_FIELD_MESSAGE_FORMAT, errorPath, expectedType, locationInJson);
+        }
+
+        return String.format(INVALID_VALUE_MESSAGE_FORMAT, value, errorPath, expectedType, locationInJson);
     }
 
     private String getErrorPath(MismatchedInputException exception) {
@@ -111,6 +120,14 @@ public class HttpMessageNotReadableDetails {
 
     private String getSimplifiedLocation(JsonLocation location) {
         return String.format(SIMPLIFIED_LOCATION_FORMAT, location.getLineNr(), location.getColumnNr());
+    }
+
+    private String createMismatchedInputErrorMessage(MismatchedInputException exception) {
+        var errorPath = getErrorPath(exception);
+        var expectedType = getSimplifiedRequiredType(exception.getTargetType());
+        var locationInJson = getSimplifiedLocation(exception.getLocation());
+
+        return String.format(INVALID_FIELD_MESSAGE_FORMAT, errorPath, expectedType, locationInJson);
     }
 
     private String createJsonProcessingErrorMessage(JsonProcessingException procEx) {
