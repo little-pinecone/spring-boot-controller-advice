@@ -1,6 +1,7 @@
 package in.keepgrowing.springbootcontrolleradvice.product.presentation.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Product;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.model.TestProductProvider;
 import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.ProductRepository;
 import in.keepgrowing.springbootcontrolleradvice.product.infrastructure.config.MvcConfig;
@@ -61,13 +62,13 @@ class ProductControllerTest {
 
     @Test
     void shouldReturnAllProducts() throws Exception {
-        var product = productProvider.full();
-        var products = List.of(product);
+        Product product = productProvider.full();
+        List<Product> products = List.of(product);
 
         when(productRepository.findAll())
                 .thenReturn(products);
 
-        var expectedResponse = objectMapper.writeValueAsString(products);
+        String expectedResponse = objectMapper.writeValueAsString(products);
 
         mvc.perform(get(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -77,12 +78,12 @@ class ProductControllerTest {
 
     @Test
     void shouldReturnProductById() throws Exception {
-        var product = productProvider.full();
+        Product product = productProvider.full();
 
         when(productRepository.findById(UUID.fromString(TEST_UUID)))
                 .thenReturn(Optional.of(product));
 
-        var expectedResponse = objectMapper.writeValueAsString(product);
+        String expectedResponse = objectMapper.writeValueAsString(product);
 
         mvc.perform(get(BASE_PATH + "/" + TEST_UUID)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -102,13 +103,13 @@ class ProductControllerTest {
 
     @Test
     void shouldSaveNewProduct() throws Exception {
-        var productDetails = productProvider.withoutId();
-        var expected = productProvider.full();
+        Product productDetails = productProvider.withoutId();
+        Product expected = productProvider.full();
 
         when(productRepository.save(productDetails))
                 .thenReturn(Optional.of(expected));
 
-        var expectedResponse = objectMapper.writeValueAsString(expected);
+        String expectedResponse = objectMapper.writeValueAsString(expected);
 
         mvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,25 +120,38 @@ class ProductControllerTest {
 
     @Test
     void shouldReturnBadRequestForInvalidProductDetails() throws Exception {
-        var productDetails = productProvider.withoutId();
+        Product productDetails = productProvider.withoutId();
         productDetails.setEan("");
+        String content = objectMapper.writeValueAsString(productDetails);
 
         mvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(productDetails)))
+                        .content(content))
                 .andExpect(status().isUnprocessableEntity());
     }
 
     @Test
     void shouldReturnInternalServerErrorOnRepositoryFailure() throws Exception {
-        var productDetails = productProvider.withoutId();
+        Product productDetails = productProvider.withoutId();
+        String content = objectMapper.writeValueAsString(productDetails);
 
         when(productRepository.save(productDetails))
                 .thenReturn(Optional.empty());
 
         mvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(productDetails)))
+                        .content(content))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void shouldReturnBadRequestForMessageNotReadable() throws Exception {
+        Product productDetails = productProvider.withoutId();
+        String invalidContent = "[" + objectMapper.writeValueAsString(productDetails) + "]";
+
+        mvc.perform(post(BASE_PATH)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invalidContent))
+                .andExpect(status().isBadRequest());
     }
 }
