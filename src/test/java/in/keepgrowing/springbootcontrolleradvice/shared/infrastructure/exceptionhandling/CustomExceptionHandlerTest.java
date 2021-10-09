@@ -30,12 +30,12 @@ class CustomExceptionHandlerTest {
     private TestController testController;
 
     @Mock
-    private HttpMessageNotReadableDetails messageNotReadableDetails;
+    private HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider;
 
     @BeforeEach
     void setUp() {
         mvc = MockMvcBuilders.standaloneSetup(testController)
-                .setControllerAdvice(new CustomExceptionHandler(messageNotReadableDetails))
+                .setControllerAdvice(new CustomExceptionHandler(messageNotReadableDetailsProvider))
                 .build();
     }
 
@@ -85,7 +85,7 @@ class CustomExceptionHandlerTest {
         when(testController.executeTestRequest())
                 .thenThrow(HttpMessageNotReadableException.class);
 
-        when(messageNotReadableDetails.getDetails(any()))
+        when(messageNotReadableDetailsProvider.getDetails(any()))
                 .thenReturn("Error details");
 
         mvc.perform(get("/test"))

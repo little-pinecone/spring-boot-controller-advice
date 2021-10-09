@@ -11,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.mock.http.MockHttpInputMessage;
 
+import java.io.InputStream;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -19,35 +22,38 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
-class HttpMessageNotReadableDetailsTest {
+class HttpMessageNotReadableDetailsProviderTest {
 
     private static final List<Class<?>> TYPES = List.of(byte.class, short.class, int.class, long.class, char.class,
             boolean.class, Integer.class, Long.class, Double.class, Float.class, Instant.class, ZonedDateTime.class,
             LocalDateTime.class, LocalDate.class, String.class, Character.class, UUID.class, Boolean.class, List.class);
-    private static final Pattern UNKNOWN_TYPE = Pattern.compile(HttpMessageNotReadableDetails.UNKNOWN_TYPE);
+    private static final Pattern UNKNOWN_TYPE = Pattern.compile(HttpMessageNotReadableDetailsProvider.UNKNOWN_TYPE);
 
-    private HttpMessageNotReadableDetails messageNotReadableDetails;
+    private HttpMessageNotReadableDetailsProvider detailsProvider;
     private JsonParser parser;
+    private MockHttpInputMessage inputMessage;
 
     @BeforeEach
     void setUp() {
-        messageNotReadableDetails = new HttpMessageNotReadableDetails();
+        detailsProvider = new HttpMessageNotReadableDetailsProvider();
         parser = Mockito.mock(JsonParser.class);
         lenient().when(parser.getTokenLocation())
                 .thenReturn(new JsonLocation("sourceRef", 10, 20, 30));
+        inputMessage = new MockHttpInputMessage(InputStream.nullInputStream());
     }
 
     @Test
-    void shouldProvideDefaultDetails() {
-        var actual = messageNotReadableDetails.getDetails(new RuntimeException());
+    void shouldProvideDefaultDetailsWhenThereIsNoCause() {
+        String actual = detailsProvider.getDetails(new HttpMessageNotReadableException("", inputMessage));
 
-        assertEquals(HttpMessageNotReadableDetails.DEFAULT_MESSAGE, actual);
+        assertEquals(HttpMessageNotReadableDetailsProvider.DEFAULT_MESSAGE, actual);
     }
 
     @Test
@@ -57,7 +63,7 @@ class HttpMessageNotReadableDetailsTest {
         var expectedMessage = "Invalid value 'val' for 'field1[3].field2' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
 
-        var actual = messageNotReadableDetails.getDetails(exception);
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
     }
@@ -68,13 +74,17 @@ class HttpMessageNotReadableDetailsTest {
         exception.prependPath(new JsonMappingException.Reference(null, "field1"));
     }
 
+    private HttpMessageNotReadableException createParentException(Throwable innerException) {
+        return new HttpMessageNotReadableException("msg", innerException, inputMessage);
+    }
+
     @Test
     void shouldProvideDetailsForInvalidFormatExceptionWithoutValueAndPaths() {
         var exception = InvalidFormatException.from(parser, "msg", null, Double.class);
         var expectedMessage = "Invalid value for 'the request' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
 
-        var actual = messageNotReadableDetails.getDetails(exception);
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
     }
@@ -86,7 +96,7 @@ class HttpMessageNotReadableDetailsTest {
         var expectedMessage = "Invalid value for 'field1[3].field2' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
 
-        var actual = messageNotReadableDetails.getDetails(exception);
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
     }
@@ -95,8 +105,8 @@ class HttpMessageNotReadableDetailsTest {
     void shouldProvideDetailsForMismatchedInputExceptionWhenRequiredTypeIsUnknown() {
         var exception = MismatchedInputException.from(parser, Map.class, "msg");
 
-        var actual = messageNotReadableDetails.getDetails(exception);
-        var bicMatcher = UNKNOWN_TYPE.matcher(actual);
+        String actual = detailsProvider.getDetails(createParentException(exception));
+        Matcher bicMatcher = UNKNOWN_TYPE.matcher(actual);
 
         assertTrue(bicMatcher.find());
     }
@@ -106,8 +116,8 @@ class HttpMessageNotReadableDetailsTest {
         TYPES.forEach(type -> {
             var exception = MismatchedInputException.from(parser, type, "msg");
 
-            var actual = messageNotReadableDetails.getDetails(exception);
-            var bicMatcher = UNKNOWN_TYPE.matcher(actual);
+            String actual = detailsProvider.getDetails(createParentException(exception));
+            Matcher bicMatcher = UNKNOWN_TYPE.matcher(actual);
 
             assertFalse(bicMatcher.find(), "Unhandled type: " + type.getName());
         });
@@ -118,7 +128,7 @@ class HttpMessageNotReadableDetailsTest {
         var exception = MismatchedInputException.from(parser, TestEnum.class, "msg");
         var expectedMessage = "Invalid value for 'the request' (expected an enum '[A, B]') at line: 20, column: 30 in json.";
 
-        var actual = messageNotReadableDetails.getDetails(exception);
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
     }
@@ -128,14 +138,16 @@ class HttpMessageNotReadableDetailsTest {
         var exception = MismatchedInputException.from(parser, int.class, "msg");
         var expectedMessage = "Invalid value for 'the request' (expected an integer number) at line: 20, column: 30 in json.";
 
-        var actual = messageNotReadableDetails.getDetails(exception);
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
     }
 
     @Test
     void shouldProvideDetailsForJsonProcessingException() {
-        var actual = messageNotReadableDetails.getDetails(createJsonProcessingException());
+        JsonProcessingException exception = createJsonProcessingException();
+
+        String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals("Some error at line: 20, column: 30 in json.", actual);
     }

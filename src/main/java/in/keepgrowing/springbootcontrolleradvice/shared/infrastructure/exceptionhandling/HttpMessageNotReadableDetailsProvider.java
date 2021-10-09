@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import lombok.Data;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -14,7 +15,7 @@ import java.time.ZonedDateTime;
 import java.util.*;
 
 @Data
-public class HttpMessageNotReadableDetails {
+public class HttpMessageNotReadableDetailsProvider {
 
     protected static final String UNKNOWN_TYPE = "type could not be established";
     protected static final String DEFAULT_MESSAGE = "The HTTP message could not be read.";
@@ -43,18 +44,18 @@ public class HttpMessageNotReadableDetails {
     private static final String ERROR_PATH_DELIMITER = ".";
     private static final String JSON_PROCESSING_MESSAGE_FORMAT = "%s at %s.";
 
-    public String getDetails(Throwable cause) {
-        var errorDetails = DEFAULT_MESSAGE;
+    public String getDetails(HttpMessageNotReadableException exception) {
+        Throwable cause = exception.getCause();
 
         if (cause instanceof InvalidFormatException) {
-            errorDetails = createInvalidFormatErrorMessage((InvalidFormatException) cause);
+            return createInvalidFormatErrorMessage((InvalidFormatException) cause);
         } else if (cause instanceof MismatchedInputException) {
-            errorDetails = createMismatchedInputErrorMessage((MismatchedInputException) cause);
+            return createMismatchedInputErrorMessage((MismatchedInputException) cause);
         } else if (cause instanceof JsonProcessingException) {
-            errorDetails = createJsonProcessingErrorMessage((JsonProcessingException) cause);
+            return createJsonProcessingErrorMessage((JsonProcessingException) cause);
         }
 
-        return errorDetails;
+        return DEFAULT_MESSAGE;
     }
 
     private String createInvalidFormatErrorMessage(InvalidFormatException exception) {

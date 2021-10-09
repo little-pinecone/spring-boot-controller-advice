@@ -22,10 +22,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     public static final String INVALID_REQUEST_MESSAGE = "Invalid request.";
 
-    private final HttpMessageNotReadableDetails messageNotReadableDetails;
+    private final HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider;
 
-    public CustomExceptionHandler(HttpMessageNotReadableDetails messageNotReadableDetails) {
-        this.messageNotReadableDetails = messageNotReadableDetails;
+    public CustomExceptionHandler(HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider) {
+        this.messageNotReadableDetailsProvider = messageNotReadableDetailsProvider;
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -80,7 +80,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpStatus status,
                                                                   WebRequest request) {
         log.error("Message not readable:", ex);
-        String errorDetails = messageNotReadableDetails.getDetails(ex.getCause());
+        String errorDetails = messageNotReadableDetailsProvider.getDetails(ex);
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.CLIENT_ERROR)
                 .message(INVALID_REQUEST_MESSAGE + " " + errorDetails)
