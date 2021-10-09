@@ -58,10 +58,10 @@ public class HttpMessageNotReadableDetails {
     }
 
     private String createInvalidFormatErrorMessage(InvalidFormatException exception) {
-        var value = exception.getValue();
-        var errorPath = getErrorPath(exception);
-        var expectedType = getSimplifiedRequiredType(exception.getTargetType());
-        var locationInJson = getSimplifiedLocation(exception.getLocation());
+        Object value = exception.getValue();
+        String errorPath = getErrorPath(exception);
+        String expectedType = getSimplifiedRequiredType(exception.getTargetType());
+        String locationInJson = getSimplifiedLocation(exception.getLocation());
 
         if (value == null) {
             return String.format(INVALID_FIELD_MESSAGE_FORMAT, errorPath, expectedType, locationInJson);
@@ -71,19 +71,19 @@ public class HttpMessageNotReadableDetails {
     }
 
     private String getErrorPath(MismatchedInputException exception) {
-        var references = exception.getPath();
+        List<JsonMappingException.Reference> references = exception.getPath();
 
         if (references.isEmpty()) {
             return ROOT_PATH;
         }
 
-        var errorPath = buildPath(references);
+        LinkedList<String> errorPath = buildPath(references);
 
         return String.join(ERROR_PATH_DELIMITER, errorPath);
     }
 
     private LinkedList<String> buildPath(List<JsonMappingException.Reference> references) {
-        var errorPath = new LinkedList<String>();
+        LinkedList<String> errorPath = new LinkedList<>();
         for (JsonMappingException.Reference reference : references) {
             if (reference.getFieldName() != null) {
                 errorPath.add(reference.getFieldName());
@@ -97,7 +97,7 @@ public class HttpMessageNotReadableDetails {
     }
 
     private String addIndexToElement(String lastPathElement, int referenceIndex) {
-        var formattedIndex = String.format(REFERENCE_INDEX_FORMAT, referenceIndex);
+        String formattedIndex = String.format(REFERENCE_INDEX_FORMAT, referenceIndex);
 
         return lastPathElement + formattedIndex;
     }
@@ -107,8 +107,8 @@ public class HttpMessageNotReadableDetails {
             return "";
         }
         if (requiredType.isEnum()) {
-            var s = Arrays.toString(requiredType.getEnumConstants());
-            return String.format(MISMATCH_ENUM_MESSAGE_FORMAT, s);
+            String enumValues = Arrays.toString(requiredType.getEnumConstants());
+            return String.format(MISMATCH_ENUM_MESSAGE_FORMAT, enumValues);
         }
 
         return MISMATCH_MESSAGES.entrySet().stream()
@@ -123,16 +123,16 @@ public class HttpMessageNotReadableDetails {
     }
 
     private String createMismatchedInputErrorMessage(MismatchedInputException exception) {
-        var errorPath = getErrorPath(exception);
-        var expectedType = getSimplifiedRequiredType(exception.getTargetType());
-        var locationInJson = getSimplifiedLocation(exception.getLocation());
+        String errorPath = getErrorPath(exception);
+        String expectedType = getSimplifiedRequiredType(exception.getTargetType());
+        String locationInJson = getSimplifiedLocation(exception.getLocation());
 
         return String.format(INVALID_FIELD_MESSAGE_FORMAT, errorPath, expectedType, locationInJson);
     }
 
     private String createJsonProcessingErrorMessage(JsonProcessingException procEx) {
-        var message = procEx.getOriginalMessage();
-        var location = getSimplifiedLocation(procEx.getLocation());
+        String message = procEx.getOriginalMessage();
+        String location = getSimplifiedLocation(procEx.getLocation());
 
         return String.format(JSON_PROCESSING_MESSAGE_FORMAT, message, location);
     }

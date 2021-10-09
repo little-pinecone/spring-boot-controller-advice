@@ -80,7 +80,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpStatus status,
                                                                   WebRequest request) {
         log.error("Message not readable:", ex);
-        var errorDetails = messageNotReadableDetails.getDetails(ex.getCause());
+        String errorDetails = messageNotReadableDetails.getDetails(ex.getCause());
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.CLIENT_ERROR)
                 .message(INVALID_REQUEST_MESSAGE + " " + errorDetails)
