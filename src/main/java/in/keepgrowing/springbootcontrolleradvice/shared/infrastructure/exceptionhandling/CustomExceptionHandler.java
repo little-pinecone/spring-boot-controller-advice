@@ -20,12 +20,17 @@ import java.util.List;
 @Slf4j
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
-    public static final String INVALID_REQUEST_MESSAGE = "Invalid request.";
+    private static final String INVALID_REQUEST_MESSAGE = "Invalid request.";
+    private static final String TYPE_MISMATCH_MESSAGE_FORMAT = INVALID_REQUEST_MESSAGE +
+            " Invalid value for '%s' (expected %s).";
 
     private final HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider;
+    private final SimpleTypeMapper simpleTypeMapper;
 
-    public CustomExceptionHandler(HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider) {
+    public CustomExceptionHandler(HttpMessageNotReadableDetailsProvider messageNotReadableDetailsProvider,
+                                  SimpleTypeMapper simpleTypeMapper) {
         this.messageNotReadableDetailsProvider = messageNotReadableDetailsProvider;
+        this.simpleTypeMapper = simpleTypeMapper;
     }
 
     @ExceptionHandler(RuntimeException.class)
@@ -41,9 +46,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Object> handleException(MethodArgumentTypeMismatchException ex, WebRequest request) {
         log.error("Invalid argument type:", ex);
+        String expectedType = simpleTypeMapper.map(ex.getRequiredType());
+        String message = String.format(TYPE_MISMATCH_MESSAGE_FORMAT, ex.getName(), expectedType);
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.CLIENT_ERROR)
-                .message(INVALID_REQUEST_MESSAGE + " Verify the type of provided arguments.")
+                .message(message)
                 .build();
 
         return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
