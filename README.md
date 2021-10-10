@@ -30,7 +30,7 @@ mvn spring-boot:run
 
 ## Examples
 
-You'll find the Postman collection with example requests in the postman directory. 
+You'll find the Postman collection with example requests in the [postman](https://github.com/little-pinecone/spring-boot-controller-advice/tree/master/postman) directory. 
 The examples contain both correct and incorrect requests to help you work with this project.
 
 Some examples:
