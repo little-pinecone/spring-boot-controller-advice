@@ -9,40 +9,37 @@ import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.http.MockHttpInputMessage;
 
 import java.io.InputStream;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HttpMessageNotReadableDetailsProviderTest {
 
-    private static final List<Class<?>> TYPES = List.of(byte.class, short.class, int.class, long.class, char.class,
-            boolean.class, Integer.class, Long.class, Double.class, Float.class, Instant.class, ZonedDateTime.class,
-            LocalDateTime.class, LocalDate.class, String.class, Character.class, UUID.class, Boolean.class, List.class);
-    private static final Pattern UNKNOWN_TYPE = Pattern.compile(HttpMessageNotReadableDetailsProvider.UNKNOWN_TYPE);
+    private static final Pattern UNKNOWN_TYPE = Pattern.compile(SimpleTypeMapper.UNKNOWN_TYPE);
 
     private HttpMessageNotReadableDetailsProvider detailsProvider;
     private JsonParser parser;
     private MockHttpInputMessage inputMessage;
 
+    @Mock
+    private SimpleTypeMapper typeMapper;
+
     @BeforeEach
     void setUp() {
-        detailsProvider = new HttpMessageNotReadableDetailsProvider();
+        detailsProvider = new HttpMessageNotReadableDetailsProvider(typeMapper);
         parser = Mockito.mock(JsonParser.class);
         lenient().when(parser.getTokenLocation())
                 .thenReturn(new JsonLocation("sourceRef", 10, 20, 30));
@@ -62,10 +59,16 @@ class HttpMessageNotReadableDetailsProviderTest {
         prependPaths(exception);
         var expectedMessage = "Invalid value 'val' for 'field1[3].field2' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
+        mockSimpleTypeMapper(Double.class, SimpleTypeMapper.SIMPLE_FLOATING);
 
         String actual = detailsProvider.getDetails(createParentException(exception));
 
         assertEquals(expectedMessage, actual);
+    }
+
+    private void mockSimpleTypeMapper(Class<?> required, String simplified) {
+        when(typeMapper.map(required))
+                .thenReturn(simplified);
     }
 
     private void prependPaths(JsonMappingException exception) {
@@ -83,6 +86,7 @@ class HttpMessageNotReadableDetailsProviderTest {
         var exception = InvalidFormatException.from(parser, "msg", null, Double.class);
         var expectedMessage = "Invalid value for 'the request' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
+        mockSimpleTypeMapper(Double.class, SimpleTypeMapper.SIMPLE_FLOATING);
 
         String actual = detailsProvider.getDetails(createParentException(exception));
 
@@ -95,6 +99,7 @@ class HttpMessageNotReadableDetailsProviderTest {
         prependPaths(exception);
         var expectedMessage = "Invalid value for 'field1[3].field2' (expected a floating point number) " +
                 "at line: 20, column: 30 in json.";
+        mockSimpleTypeMapper(Double.class, SimpleTypeMapper.SIMPLE_FLOATING);
 
         String actual = detailsProvider.getDetails(createParentException(exception));
 
@@ -102,8 +107,9 @@ class HttpMessageNotReadableDetailsProviderTest {
     }
 
     @Test
-    void shouldProvideDetailsForMismatchedInputExceptionWhenRequiredTypeIsUnknown() {
+    void shouldProvideDetailsForMismatchedInputExceptionWhenRequiredTypeIsNotSupported() {
         var exception = MismatchedInputException.from(parser, Map.class, "msg");
+        mockSimpleTypeMapper(Map.class, SimpleTypeMapper.UNKNOWN_TYPE);
 
         String actual = detailsProvider.getDetails(createParentException(exception));
         Matcher bicMatcher = UNKNOWN_TYPE.matcher(actual);
@@ -112,21 +118,10 @@ class HttpMessageNotReadableDetailsProviderTest {
     }
 
     @Test
-    void shouldProvideDetailsForMismatchedInputExceptionForSupportedTypes() {
-        TYPES.forEach(type -> {
-            var exception = MismatchedInputException.from(parser, type, "msg");
-
-            String actual = detailsProvider.getDetails(createParentException(exception));
-            Matcher bicMatcher = UNKNOWN_TYPE.matcher(actual);
-
-            assertFalse(bicMatcher.find(), "Unhandled type: " + type.getName());
-        });
-    }
-
-    @Test
     void shouldProvideDetailsForMismatchedInputExceptionForEnums() {
         var exception = MismatchedInputException.from(parser, TestEnum.class, "msg");
         var expectedMessage = "Invalid value for 'the request' (expected an enum '[A, B]') at line: 20, column: 30 in json.";
+        mockSimpleTypeMapper(TestEnum.class, String.format(SimpleTypeMapper.SIMPLE_ENUM, "[A, B]"));
 
         String actual = detailsProvider.getDetails(createParentException(exception));
 
@@ -137,6 +132,7 @@ class HttpMessageNotReadableDetailsProviderTest {
     void shouldProvideDetailsForMismatchedInputExceptionWithEmptyPath() {
         var exception = MismatchedInputException.from(parser, int.class, "msg");
         var expectedMessage = "Invalid value for 'the request' (expected an integer number) at line: 20, column: 30 in json.";
+        mockSimpleTypeMapper(int.class, SimpleTypeMapper.SIMPLE_INTEGER);
 
         String actual = detailsProvider.getDetails(createParentException(exception));
 
