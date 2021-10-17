@@ -1,6 +1,8 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
 import org.hamcrest.Matchers;
+import org.hibernate.validator.internal.engine.ConstraintViolationImpl;
+import org.hibernate.validator.internal.engine.path.PathImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +17,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.*;
@@ -113,6 +119,31 @@ class CustomExceptionHandlerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionCode", is(expectedCode)))
                 .andExpect(jsonPath("$.message", is(expectedMessage)));
+    }
+
+    @Test
+    void shouldHandleConstraintViolation() throws Exception {
+        var expectedCode = ExceptionCode.CLIENT_ERROR.toString();
+        var exception = createConstraintViolationException();
+
+        when(testController.executeTestRequest())
+                .thenThrow(exception);
+
+        mvc.perform(get(PATH))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.exceptionCode", is(expectedCode)))
+                .andExpect(jsonPath("$.validationErrors[*].fieldName", Matchers.contains("last")))
+                .andExpect(jsonPath("$.validationErrors[*].brokenConstraint", Matchers.contains("violation msg")));
+    }
+
+    private ConstraintViolationException createConstraintViolationException() {
+        Path path = PathImpl.createPathFromString("first.second.last");
+        ConstraintViolation<String> violation = ConstraintViolationImpl.forParameterValidation(null,
+                null, null, "violation msg", null,
+                null, null, null, path, null, null,
+                null);
+
+        return new ConstraintViolationException("exception msg", Set.of(violation));
     }
 
     @RestController

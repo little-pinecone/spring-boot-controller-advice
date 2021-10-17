@@ -13,8 +13,12 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @RestControllerAdvice
 @Slf4j
@@ -94,5 +98,34 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .build();
 
         return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleException(ConstraintViolationException ex, WebRequest request) {
+        log.error("Request constraints were violated:", ex);
+        var body = ErrorResponseBody.builder()
+                .exceptionCode(ExceptionCode.CLIENT_ERROR)
+                .message(INVALID_REQUEST_MESSAGE + " Check 'validationErrors' for details.")
+                .validationErrors(getValidationErrors(ex.getConstraintViolations()))
+                .build();
+
+        return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.BAD_REQUEST, request);
+    }
+
+    private ArrayList<ValidationError> getValidationErrors(Set<ConstraintViolation<?>> violations) {
+        var validationErrors = new ArrayList<ValidationError>();
+        violations.forEach(v -> {
+            String lastNode = getLastNode(v.getPropertyPath());
+            validationErrors.add(new ValidationError(lastNode, v.getMessage()));
+        });
+
+        return validationErrors;
+    }
+
+    private String getLastNode(Path violationPath) {
+        var nodes = new ArrayList<String>();
+        violationPath.forEach(node -> nodes.add(node.getName()));
+
+        return nodes.get(nodes.size() - 1);
     }
 }

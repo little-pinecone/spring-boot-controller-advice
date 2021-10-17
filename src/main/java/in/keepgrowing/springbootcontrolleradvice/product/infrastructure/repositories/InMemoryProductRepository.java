@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.stream.Collectors.toList;
+
 public class InMemoryProductRepository implements ProductRepository {
 
     private final Dummy4j dummy;
@@ -55,5 +57,12 @@ public class InMemoryProductRepository implements ProductRepository {
         products.add(productDetails);
 
         return findById(productDetails.getId());
+    }
+
+    @Override
+    public List<Product> findByMinimumQuantity(int quantity) {
+        return products.stream()
+                .filter(p -> p.getAvailableQuantity() >= (quantity))
+                .collect(toList());
     }
 }

@@ -198,6 +198,60 @@
 			"response": []
 		},
 		{
+			"name": "findByQuantity",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/products/filter?quantity=100",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"products",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "quantity",
+							"value": "100"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ConstraintViolationException",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/api/products/filter?quantity=0",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"api",
+						"products",
+						"filter"
+					],
+					"query": [
+						{
+							"key": "quantity",
+							"value": "0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "MethodArgumentTypeMismatchException",
 			"request": {
 				"method": "GET",

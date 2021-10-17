@@ -64,4 +64,14 @@ class InMemoryProductRepositoryTest {
         assertNotNull(actual.get().getId());
         assertEquals(originalSize + 1, productRepository.findAll().size());
     }
+
+    @Test
+    void shouldReturnProductsByMinQuantity() {
+        var products = productRepository.findAll();
+
+        var actual = productRepository.findByMinimumQuantity(products.get(0).getAvailableQuantity());
+
+        assertNotNull(actual);
+        assertFalse(actual.isEmpty());
+    }
 }

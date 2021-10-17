@@ -5,14 +5,17 @@ import in.keepgrowing.springbootcontrolleradvice.product.domain.repositories.Pro
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "products", produces = MediaType.APPLICATION_JSON_VALUE)
+@Validated
 public class ProductController {
 
     private final ProductRepository productRepository;
@@ -40,5 +43,12 @@ public class ProductController {
         return productRepository.save(productDetails)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
+
+    @GetMapping("filter")
+    public ResponseEntity<List<Product>> findByMinimumQuantity(@RequestParam("quantity") @Min(1) int quantity) {
+        var products = productRepository.findByMinimumQuantity(quantity);
+
+        return ResponseEntity.ok(products);
     }
 }

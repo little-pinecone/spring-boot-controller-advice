@@ -13,4 +13,6 @@ public interface ProductRepository {
     Optional<Product> findById(UUID productId);
 
     Optional<Product> save(Product productDetails);
+
+    List<Product> findByMinimumQuantity(int quantity);
 }

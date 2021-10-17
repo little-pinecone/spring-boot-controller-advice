@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.Collections.emptyList;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -156,6 +157,45 @@ class ProductControllerTest {
         mvc.perform(post(BASE_PATH)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidContent))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnProductByMinQuantity() throws Exception {
+        Product product = productProvider.full();
+        int quantity = product.getAvailableQuantity();
+
+        when(productRepository.findByMinimumQuantity(quantity))
+                .thenReturn(List.of(product));
+
+        String expectedResponse = objectMapper.writeValueAsString(List.of(product));
+
+        mvc.perform(get(BASE_PATH + "/filter")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("quantity", String.valueOf(quantity)))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponse));
+    }
+
+    @Test
+    void shouldReturnEmptyListForNonExistingQuantity() throws Exception {
+        when(productRepository.findByMinimumQuantity(1))
+                .thenReturn(emptyList());
+
+        String expectedResponse = objectMapper.writeValueAsString(List.of());
+
+        mvc.perform(get(BASE_PATH + "/filter")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("quantity", "1"))
+                .andExpect(status().isOk())
+                .andExpect(content().json(expectedResponse));
+    }
+
+    @Test
+    void shouldReturnBadRequestForNonInvalidQuantity() throws Exception {
+        mvc.perform(get(BASE_PATH + "/filter")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .param("quantity", "0"))
                 .andExpect(status().isBadRequest());
     }
 }
