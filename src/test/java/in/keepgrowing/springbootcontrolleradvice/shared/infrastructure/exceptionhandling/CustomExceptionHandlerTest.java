@@ -115,7 +115,7 @@ class CustomExceptionHandlerTest {
         when(messageNotReadableDetailsProvider.getDetails(any()))
                 .thenReturn("Error details");
 
-        mvc.perform(get("/test"))
+        mvc.perform(get(PATH))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.exceptionCode", is(expectedCode)))
                 .andExpect(jsonPath("$.message", is(expectedMessage)));
