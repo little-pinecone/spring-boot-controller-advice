@@ -8,7 +8,7 @@ This is a demo project to test how global exception handling work in an example 
 
 ## Prerequisites
 
-* JDK 13+
+* JDK 17+ ([How to install OpenJDK 17 on Ubuntu](https://keepgrowing.in/java/how-to-install-openjdk-17-on-ubuntu/))
 * [Maven](https://maven.apache.org/) (or you can use `mvnw` provided in the project)
 
 ## Getting started
@@ -45,6 +45,6 @@ Some examples:
 
 ## Built With
 
-* [Spring Boot v2.5+](https://spring.io/projects/spring-boot)
+* [Spring Boot v2.6+](https://spring.io/projects/spring-boot)
 * [Maven](https://maven.apache.org/)
 * [Dummy4j](https://daniel-frak.github.io/dummy4j/)
