@@ -1,5 +1,6 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
+import in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.validation.exceptions.InternalConstraintValidationException;
 import org.hamcrest.Matchers;
 import org.hibernate.validator.internal.engine.ConstraintViolationImpl;
 import org.hibernate.validator.internal.engine.path.PathImpl;
@@ -144,6 +145,21 @@ class CustomExceptionHandlerTest {
                 null);
 
         return new ConstraintViolationException("exception msg", Set.of(violation));
+    }
+
+    @Test
+    void shouldHandleInternalConstraintViolation() throws Exception {
+        var expectedCode = ExceptionCode.INTERNAL_SERVER_ERROR.toString();
+        var ex = createConstraintViolationException();
+        var internalException = new InternalConstraintValidationException(ex.getMessage(), ex.getConstraintViolations());
+
+        when(testController.executeTestRequest())
+                .thenThrow(internalException);
+
+        mvc.perform(get(PATH))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.exceptionCode", is(expectedCode)))
+                .andExpect(jsonPath("$.message", is("The request could not be processed.")));
     }
 
     @RestController

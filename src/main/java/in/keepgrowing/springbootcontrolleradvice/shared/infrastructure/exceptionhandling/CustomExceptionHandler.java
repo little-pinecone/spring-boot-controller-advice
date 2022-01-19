@@ -1,5 +1,6 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
+import in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.validation.exceptions.InternalConstraintValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -127,5 +128,16 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         violationPath.forEach(node -> nodes.add(node.getName()));
 
         return nodes.get(nodes.size() - 1);
+    }
+
+    @ExceptionHandler(InternalConstraintValidationException.class)
+    public ResponseEntity<Object> handleException(InternalConstraintValidationException ex, WebRequest request) {
+        List<ValidationError> validationErrors = getValidationErrors(ex.getConstraintViolations());
+        log.error("Constraints were violated internally:\n" + validationErrors, ex);
+        var body = ErrorResponseBody.builder()
+                .exceptionCode(ExceptionCode.INTERNAL_SERVER_ERROR)
+                .build();
+
+        return handleExceptionInternal(ex, body, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 }
