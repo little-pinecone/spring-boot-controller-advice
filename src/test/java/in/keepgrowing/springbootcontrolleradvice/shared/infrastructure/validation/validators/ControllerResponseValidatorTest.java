@@ -27,6 +27,7 @@ class ControllerResponseValidatorTest {
 
     private static final String PATH = "/test";
     private static final String PATH_FOR_LIST = "/list";
+    private static final String PATH_FOR_NULL_RESPONSE = "/null";
 
     private MockMvc mvc;
 
@@ -46,6 +47,11 @@ class ControllerResponseValidatorTest {
     @Test
     void shouldThrowExceptionOnInvalidCollectionInResponse() {
         assertThrows(NestedServletException.class, () -> mvc.perform(get(PATH_FOR_LIST)));
+    }
+
+    @Test
+    void shouldThrowExceptionOnNullResponseBody() {
+        assertThrows(NestedServletException.class, () -> mvc.perform(get(PATH)));
     }
 
     @RestController
@@ -68,6 +74,11 @@ class ControllerResponseValidatorTest {
         @GetMapping(PATH_FOR_LIST)
         public ResponseEntity<List<Product>> executeTestRequestForList() {
             return ResponseEntity.ok(List.of(getInvalidProduct()));
+        }
+
+        @GetMapping(PATH_FOR_NULL_RESPONSE)
+        public ResponseEntity<List<Product>> executeTestRequestForNullResponse() {
+            return ResponseEntity.ok(null);
         }
     }
 }

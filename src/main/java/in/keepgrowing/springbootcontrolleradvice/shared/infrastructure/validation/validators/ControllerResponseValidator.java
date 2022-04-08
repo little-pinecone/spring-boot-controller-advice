@@ -11,6 +11,8 @@ import javax.validation.ConstraintViolationException;
 import java.util.Collection;
 import java.util.Objects;
 
+import static java.util.Collections.emptySet;
+
 @Aspect
 public class ControllerResponseValidator {
 
@@ -33,10 +35,14 @@ public class ControllerResponseValidator {
     }
 
     private void validateObject(Object response) {
+        if (response == null) {
+            throw new InternalConstraintValidationException("Null response", emptySet(), Object.class);
+        }
         try {
             validator.validate(response);
         } catch (ConstraintViolationException e) {
-            throw new InternalConstraintValidationException(e.getMessage(), e.getConstraintViolations());
+            throw new InternalConstraintValidationException(e.getMessage(), e.getConstraintViolations(),
+                    response.getClass());
         }
     }
 }

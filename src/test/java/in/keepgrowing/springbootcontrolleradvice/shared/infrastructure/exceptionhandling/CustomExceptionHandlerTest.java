@@ -1,5 +1,6 @@
 package in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.exceptionhandling;
 
+import in.keepgrowing.springbootcontrolleradvice.product.domain.model.Product;
 import in.keepgrowing.springbootcontrolleradvice.shared.infrastructure.validation.exceptions.InternalConstraintValidationException;
 import org.hamcrest.Matchers;
 import org.hibernate.validator.internal.engine.ConstraintViolationImpl;
@@ -151,7 +152,8 @@ class CustomExceptionHandlerTest {
     void shouldHandleInternalConstraintViolation() throws Exception {
         var expectedCode = ExceptionCode.INTERNAL_SERVER_ERROR.toString();
         var ex = createConstraintViolationException();
-        var internalException = new InternalConstraintValidationException(ex.getMessage(), ex.getConstraintViolations());
+        var internalException = new InternalConstraintValidationException(ex.getMessage(), ex.getConstraintViolations(),
+                Product.class);
 
         when(testController.executeTestRequest())
                 .thenThrow(internalException);

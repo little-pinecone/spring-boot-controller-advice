@@ -133,7 +133,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InternalConstraintValidationException.class)
     public ResponseEntity<Object> handleException(InternalConstraintValidationException ex, WebRequest request) {
         List<ValidationError> validationErrors = getValidationErrors(ex.getConstraintViolations());
-        log.error("Constraints were violated internally:\n" + validationErrors, ex);
+        String validatedObject = ex.getValidatedObjectClass().getName();
+        log.error("Constraints for " + validatedObject + " were violated internally:\n" + validationErrors, ex);
         var body = ErrorResponseBody.builder()
                 .exceptionCode(ExceptionCode.INTERNAL_SERVER_ERROR)
                 .build();
